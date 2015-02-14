@@ -2,16 +2,16 @@
 
 
 def get_disk_bandwidth(name):
-    """ Return disk bandwidth in KB/s """
-    return 1000.99
+    """ Return disk bandwidth in KB/s (read, write)"""
+    return (1000.99, 99.1000)
 
 def get_disk_iops(name):
-    """ Return disk IOPS """
-    return 99
+    """ Return disk IOPS for all time (read, write) """
+    return (99, 66)
 
 def get_disk_latency(name):
-    """ Return disk latency in ms """
-    return 13
+    """ Return disk latency in ms (read, write)"""
+    return (13, 31)
 
 def test():
     print (get_disk_bandwidth('/dev/sdx'))
