@@ -9,23 +9,33 @@ from os.path import splitext, basename, realpath
 
 CEPH_SOCKET_PATH = os.getenv("CEPH_RUN_PATH", "/var/run/ceph/")
 
-class CephSrvInfo(object):
-    def __init__(self, name, pid):
+class CEPHSrvInfo(object):
+    def __init__(self, name, pid, cpu=0, mem=0):
         self.name = name
         self.pid = pid
+        self.cpu = cpu
+        self.mem = mem
 
 
 def get_ceph_pids():
-    """Return PIDs as list of SrvInfo for all CEPH
+    """Return list tuple (NAME, PID) as list of SrvInfo for all CEPH
     services on local node.
     """
     pids = []
     for srv in get_srv_list():
         cfg = get_srv_config(srv)
         with open(cfg['pid_file'], 'r') as file_fd:
-            pids.append(CephSrvInfo(srv, int(file_fd.read())))
-
+            pids.append((srv, int(file_fd.read())))
     return pids
+
+def get_ceph_srv_info():
+    """ Return list of CEPHSrvInfo for all CEPH services on the local node """
+    services = []
+    for name, pid in get_ceph_pids():
+        process = psutil.Process(pid)
+        services.append(CEPHSrvInfo(name, pid, process.get_cpu_percent(),\
+                                        process.memory_info().rss))
+    return services
 
 def get_ceph_disk():
     """Return list of disk devices wich is used by all
@@ -70,9 +80,13 @@ def find_mount_point(path):
     return path
 
 def test():
-    for srv in get_ceph_pids():
-        print 'Service %s has pid %d' % (srv.name, srv.pid)
+    for name, pid in get_ceph_pids():
+        print 'Service %s has pid %d' % (name, pid)
     print get_ceph_disk()
+
+    for srv in get_ceph_srv_info():
+        print 'Service %s: pid %d, cpu %d%%, mem %d bytes' % \
+            (srv.name, srv.pid, srv.cpu, srv.mem)
 
 if __name__ == '__main__':
     test()
