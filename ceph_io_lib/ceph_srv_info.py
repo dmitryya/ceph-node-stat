@@ -18,14 +18,14 @@ class CEPHSrvInfo(object):
 
 class CEPHDiskInfo(object):
     def __init__(self, name, rd_cnt=0, wr_cnt=0, rd_bytes=0,
-                    wr_bytes=0, rd_lat=0, wr_lat=0):
+                    wr_bytes=0, rd_time=0, wr_time=0):
         self.name = name
         self.rd_cnt = rd_cnt
         self.wr_cnt = wr_cnt
         self.rd_bytes = rd_bytes
         self.wr_bytes = wr_bytes
-        self.rd_lat = rd_lat
-        self.wr_lat = wr_lat
+        self.rd_time = rd_time
+        self.wr_time = wr_time
 
 def get_ceph_srv_info():
     """ Return list of CEPHSrvInfo for all CEPH services on the local node """
@@ -50,8 +50,8 @@ def get_ceph_drv_info():
             info.wr_cnt = stat[disk].write_count
             info.rd_bytes = stat[disk].read_bytes
             info.wr_bytes = stat[disk].write_bytes
-
-        info.rd_lat, info.wr_lat = get_disk_latency(drv)
+            info.rd_time = stat[disk].read_time
+            info.wr_time = stat[disk].write_time
 
         disks_info.append(info)
 
@@ -97,12 +97,6 @@ def get_srv_config(name):
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return json.loads(out.stdout.read())
 
-def get_disk_latency(name):
-    """ Return read and write latency for disk.
-        DUMMY at this moment
-    """
-    return (1,1)
-
 def get_disk_by_mountpoint(mnt_point):
     """ Return disk of mountpoint """
     diskparts = psutil.disk_partitions()
@@ -125,9 +119,9 @@ def test():
 
     for disk in get_ceph_drv_info():
         print ('DISK %s: read count %d, write count %d, read bytes %d,'
-              'write bytes %d, read latency %d, write latency %d') % \
+              'write bytes %d, read time %d, write time %d') % \
             (disk.name, disk.rd_cnt, disk.wr_cnt, disk.rd_bytes, disk.wr_bytes, \
-            disk.rd_lat, disk.wr_lat)
+            disk.rd_time, disk.wr_time)
 
 if __name__ == '__main__':
     test()
