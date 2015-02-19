@@ -6,19 +6,9 @@ import json
 import subprocess
 import os.path
 
-# <koder>: modules are arranged either by alhabet
-# <koder>: or by len and alphabet to aviod dupication
-# <koder>: std, 3rd party and our modules in separated groups
 import psutil
 
-# <koder>: this is essentially a global var in
-# <koder>: worsest meaning of this word
-# <koder>: you pass value to inner function side-stepping all
-# <koder>: other inbetween
-CEPH_SOCKET_PATH = os.getenv("CEPH_RUN_PATH", "/var/run/ceph/")
 
-
-# <koder>: two blank lines between objects on top level
 class CEPHSrvInfo(object):
     def __init__(self, name, pid, cpu=0, mem=0):
         self.name = name
@@ -53,10 +43,10 @@ class CEPHDiskInfo(object):
         return message.format(self)
 
 
-def get_ceph_srv_info():
+def get_ceph_srv_info(ceph_socket_path = '/var/run/ceph/'):
     """ Return list of CEPHSrvInfo for all CEPH services on the local node """
     services = []
-    for name, pid in get_ceph_pids():
+    for name, pid in get_ceph_pids(ceph_socket_path):
         process = psutil.Process(pid)
         services.append(CEPHSrvInfo(name,
                                     pid,
@@ -65,13 +55,13 @@ def get_ceph_srv_info():
     return services
 
 
-def get_ceph_drv_info():
+def get_ceph_drv_info(ceph_socket_path = '/var/run/ceph/'):
     """ Return list of CEPHDiskInfo for all disks that used by CEPH on the
         local node
     """
     disks_info = []
     stat = psutil.disk_io_counters(perdisk=True)
-    for drv in get_ceph_disk():
+    for drv in get_ceph_disk(ceph_socket_path):
         info = CEPHDiskInfo(drv)
         disk = os.path.basename(drv)
         if disk in stat:
@@ -87,25 +77,25 @@ def get_ceph_drv_info():
     return disks_info
 
 
-def get_ceph_pids():
+def get_ceph_pids(ceph_socket_path = '/var/run/ceph/'):
     """ Return list tuple (NAME, PID) as list of SrvInfo for all CEPH
         services on local node.
     """
     pids = []
-    for srv in get_srv_list():
-        cfg = get_srv_config(srv)
+    for srv in get_srv_list(ceph_socket_path):
+        cfg = get_srv_config(ceph_socket_path, srv)
         with open(cfg['pid_file'], 'r') as file_fd:
             pids.append((srv, int(file_fd.read())))
     return pids
 
 
-def get_ceph_disk():
+def get_ceph_disk(ceph_socket_path = '/var/run/ceph/'):
     """ Return list of disk devices wich is used by all
         CEPH services on local node.
     """
     disks = []
-    for srv in get_srv_list():
-        cfg = get_srv_config(srv)
+    for srv in get_srv_list(ceph_socket_path):
+        cfg = get_srv_config(ceph_socket_path, srv)
         for key in ['osd_data', 'osd_journal', 'mds_data', 'mon_data']:
             mnt_point = cfg[key]
             disk = get_disk_by_mountpoint(find_mount_point(mnt_point))
@@ -114,16 +104,16 @@ def get_ceph_disk():
     return disks
 
 
-def get_srv_list():
+def get_srv_list(ceph_socket_path):
     """ Returns list of srv (ceph creatures) on node """
     return [os.path.splitext(os.path.basename(sock))[0]
-            for sock in glob.glob(CEPH_SOCKET_PATH + "*.asok")]
+            for sock in glob.glob(ceph_socket_path + "*.asok")]
 
 
-def get_srv_config(name):
+def get_srv_config(ceph_socket_path, name):
     """ Get CEPH Service Config """
     cmd = "ceph --admin-daemon %s/%s.asok config show" % \
-        (CEPH_SOCKET_PATH, name)
+        (ceph_socket_path, name)
 
     raw_out = subprocess.check_output(cmd, shell=True)
     return json.loads(raw_out)
@@ -148,10 +138,11 @@ def find_mount_point(path):
 
 
 def test():
-    for srv in get_ceph_srv_info():
+    ceph_socket_path = os.getenv("CEPH_RUN_PATH", "/var/run/ceph/")
+    for srv in get_ceph_srv_info(ceph_socket_path):
         print str(srv)
 
-    for disk in get_ceph_drv_info():
+    for disk in get_ceph_drv_info(ceph_socket_path):
         print str(disk)
 
 
