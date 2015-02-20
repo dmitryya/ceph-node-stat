@@ -107,7 +107,7 @@ def get_ceph_disk(ceph_socket_path = '/var/run/ceph/'):
 def get_srv_list(ceph_socket_path):
     """ Returns list of srv (ceph creatures) on node """
     return [os.path.splitext(os.path.basename(sock))[0]
-            for sock in glob.glob(ceph_socket_path + "*.asok")]
+            for sock in glob.glob(ceph_socket_path + "/*.asok")]
 
 
 def get_srv_config(ceph_socket_path, name):
