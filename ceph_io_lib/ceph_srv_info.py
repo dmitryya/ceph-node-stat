@@ -50,7 +50,7 @@ def get_ceph_srv_info(ceph_socket_path = '/var/run/ceph/'):
         process = psutil.Process(pid)
         services.append(CEPHSrvInfo(name,
                                     pid,
-                                    process.get_cpu_percent(),
+                                    process.get_cpu_percent(interval=0.5),
                                     process.memory_info().rss))
     return services
 
