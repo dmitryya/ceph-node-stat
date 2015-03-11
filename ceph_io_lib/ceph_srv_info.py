@@ -84,8 +84,9 @@ def get_ceph_pids(ceph_socket_path = '/var/run/ceph/'):
     pids = []
     for srv in get_srv_list(ceph_socket_path):
         cfg = get_srv_config(ceph_socket_path, srv)
-        with open(cfg['pid_file'], 'r') as file_fd:
-            pids.append((srv, int(file_fd.read())))
+        if 'pid_file' in cfg and cfg['pid_file'] != '':
+            with open(cfg['pid_file'], 'r') as file_fd:
+                pids.append((srv, int(file_fd.read())))
     return pids
 
 
